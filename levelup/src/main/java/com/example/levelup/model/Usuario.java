@@ -1,29 +1,43 @@
 package com.example.levelup.model;
-
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-import java.time.LocalDate; // Importa LocalDate para la fecha de nacimiento
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Column; // <-- Importa Column
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Entity
+@Table(name = "USUARIOS")
 public class Usuario {
-
-    // Podríamos usar el email o el run como ID, o añadir uno numérico si usamos DB
+    @Id
+    @Column(length = 100)
+    private String email;
+    @Column(length = 20)
     private String run;
+    @Column(length = 100)
     private String nombre;
+    @Column(length = 100)
     private String apellidos;
-    private String email; // Podría ser el ID principal en lugar del run
-    private String password; // ¡Importante! En una aplicación real, NUNCA guardes la contraseña en texto plano. Usa Spring Security para hashearla.
-    private LocalDate fechaNac; // Usamos LocalDate para la fecha
-    private String role; // cliente o admin
+    @Column(length = 10) 
+    private String fechaNac;
+    @Column(length = 100)
     private String region;
+    @Column(length = 100)
     private String comuna;
-    private int points; // Puntos de gamificación
-    private int level; // Nivel de gamificación
-    private String myReferralCode; // Código de referido propio
-    // El 'referralCode' que se usa al registrarse no necesita ser un campo persistente del usuario.
+    @Column(length = 255)
+    private String password;
+    @Column(length = 20)
+    private String role; 
+    private int points;
+    
+    // ✅ ARREGLO: 'level' es una palabra reservada
+    @Column(name = "NIVEL")
+    private int level; 
 
-    // Lombok genera los métodos
+    @Column(unique = true, length = 20) 
+    private String myReferralCode;
 }

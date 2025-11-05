@@ -1,23 +1,33 @@
 package com.example.levelup.model;
-
-
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-// Considera importar LocalDate si prefieres manejar la fecha así
-// import java.time.LocalDate;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
+import jakarta.persistence.Column; // <-- Importa Column
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Entity
 public class Blog {
-
-    private String id; // ID del blog
-    private String titulo;
-    private String fecha; // Puedes usar String o cambiarlo a LocalDate si prefieres
-    private String autor;
-    private String imagen;
-    private String descripcion;
-    private String contenido; // Para el contenido largo del blog
-
+    @Id
+    private String id;
+    private String title;
+    private String author;
+    @Lob
+    @Column(length = 2097152)
+    private String summary;
+    @Lob
+    @Column(length = 4194304) 
+    private String content;
+    
+    // ✅ ARREGLO: 'date' es una palabra reservada
+    @Column(name = "FECHA_PUBLICACION") 
+    private String date; 
+    
+    @Lob
+    @Column(length = 2097152)
+    private String image;
 }
