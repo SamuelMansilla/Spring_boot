@@ -1,5 +1,6 @@
 package com.example.levelup.controller;
 
+import org.springframework.http.HttpStatus;
 import com.example.levelup.model.Producto; // Importa el modelo Producto
 import com.example.levelup.service.ProductoService; // Importa el servicio ProductoService
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,8 +46,7 @@ public class ProductoController {
                 .orElseGet(() -> ResponseEntity.notFound().build()); // Si no existe, construye un ResponseEntity 404
     }
 
-    // --- Endpoints futuros (POST, PUT, DELETE) ---
-    /*
+
     @PostMapping
     public ResponseEntity<Producto> crearProducto(@RequestBody Producto nuevoProducto) {
         // Validación básica (podría ser más compleja)
@@ -79,6 +79,6 @@ public class ProductoController {
             return ResponseEntity.notFound().build(); // Devuelve 404 si no se encontró
         }
     }
-    */
+    
 
 }

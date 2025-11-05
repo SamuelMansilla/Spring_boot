@@ -54,9 +54,7 @@ public class ProductoService {
                 .findFirst(); // Devuelve el primero que coincida (o ninguno)
     }
 
-    // --- Métodos futuros (a implementar si necesitas crear/actualizar/borrar) ---
 
-    /*
     public Producto crearProducto(Producto nuevoProducto) {
         // Aquí iría la lógica para añadir un producto (y asignarle un ID si es necesario)
         // Por ahora, solo lo añadiríamos a la lista
@@ -83,6 +81,6 @@ public class ProductoService {
         // Elimina el producto de la lista si existe
         return listaProductos.removeIf(producto -> producto.getCode().equalsIgnoreCase(code));
     }
-    */
+
 
 }
