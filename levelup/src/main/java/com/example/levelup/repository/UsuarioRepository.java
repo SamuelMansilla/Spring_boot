@@ -13,4 +13,5 @@ public interface UsuarioRepository extends JpaRepository<Usuario, String> {
     // Spring Data JPA crea la consulta automáticamente
     Optional<Usuario> findByMyReferralCodeIgnoreCase(String referralCode);
 
+    Optional<Usuario> findByEmail(String email);
 }
