@@ -1,19 +1,24 @@
 package com.example.levelup.service;
 
 import com.example.levelup.model.Usuario;
-import com.example.levelup.repository.UsuarioRepository; // Importa el Repositorio
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.levelup.repository.UsuarioRepository;
+import lombok.RequiredArgsConstructor; // <-- AÑADIDO
+import org.springframework.security.crypto.password.PasswordEncoder; // <-- AÑADIDO
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor // <-- AÑADIDO (para inyectar el encoder)
 public class UsuarioService {
 
-    // 1. Inyectamos el Repositorio de Usuario (no más Map en memoria)
-    @Autowired
-    private UsuarioRepository usuarioRepository;
+    // 1. Inyectamos el Repositorio de Usuario
+    private final UsuarioRepository usuarioRepository; // <-- CAMBIADO (ahora es final)
+
+    // 2. Inyectamos el Encoder de contraseñas
+    private final PasswordEncoder passwordEncoder; // <-- AÑADIDO (para encriptar)
+
 
     /**
      * Intenta registrar un nuevo usuario en la BD Oracle.
@@ -28,14 +33,18 @@ public class UsuarioService {
         nuevoUsuario.setEmail(nuevoUsuario.getEmail().toLowerCase());
         nuevoUsuario.setPoints(50); // Puntos por registrarse
         nuevoUsuario.setLevel(1);   // Nivel inicial
+        
+        // Asigna un rol por defecto si no viene uno
+        if (nuevoUsuario.getRole() == null || nuevoUsuario.getRole().isEmpty()) {
+            nuevoUsuario.setRole("USER");
+        }
 
         // Genera un código de referido único
-        // Ahora usamos getNombre() que SÍ existe en el modelo Usuario
         String codigoReferido = generarCodigoReferido(nuevoUsuario.getNombre()); 
         nuevoUsuario.setMyReferralCode(codigoReferido);
 
-        // ¡IMPORTANTE! Aquí deberías hashear la contraseña.
-        // Por ahora, la guardamos en texto plano.
+        // --- ¡IMPORTANTE! Encriptamos la contraseña ---
+        nuevoUsuario.setPassword(passwordEncoder.encode(nuevoUsuario.getPassword()));
         
         // Guarda el nuevo usuario en la BD
         Usuario usuarioGuardado = usuarioRepository.save(nuevoUsuario);
@@ -43,24 +52,10 @@ public class UsuarioService {
     }
 
     /**
-     * Valida las credenciales de inicio de sesión contra la BD.
+     * ¡ELIMINADO!
+     * El método validarLogin(String email, String password) se elimina.
+     * Spring Security (AuthenticationManager) se encargará de esto.
      */
-    public Optional<Usuario> validarLogin(String email, String password) {
-        Optional<Usuario> usuarioOpt = usuarioRepository.findById(email.toLowerCase());
-
-        // Verifica si el usuario existe
-        if (!usuarioOpt.isPresent()) {
-            return Optional.empty(); // Usuario no encontrado
-        }
-
-        Usuario usuario = usuarioOpt.get();
-        // Compara la contraseña (en texto plano por ahora)
-        if (usuario.getPassword() != null && usuario.getPassword().equals(password)) {
-            return Optional.of(usuario);
-        }
-
-        return Optional.empty(); // Contraseña incorrecta
-    }
 
     /**
      * Busca un usuario por su código de referido en la BD.
@@ -69,7 +64,6 @@ public class UsuarioService {
         if (codigo == null || codigo.trim().isEmpty()) {
             return Optional.empty();
         }
-        // Usamos el método que creamos en el Repositorio
         return usuarioRepository.findByMyReferralCodeIgnoreCase(codigo);
     }
 
@@ -94,7 +88,6 @@ public class UsuarioService {
      * Genera un código de referido simple.
      */
     private String generarCodigoReferido(String nombre) {
-        // Lógica simple (puedes mejorarla para asegurar unicidad)
         String base = (nombre != null && nombre.length() >= 4) ? nombre.substring(0, 4).toUpperCase() : "USER";
         String timestampPart = String.valueOf(System.currentTimeMillis() % 10000); // Últimos 4 dígitos
         return base + timestampPart;

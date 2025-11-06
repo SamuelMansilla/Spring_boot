@@ -20,27 +20,29 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor // Importante para inyectar las dependencias final
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     // 1. Dependencia: El filtro JWT
-    private final JwtAuthFilter jwtAuthFilter; 
+    // private final JwtAuthFilter jwtAuthFilter; // <-- ¡ELIMINA ESTA LÍNEA! Esta es la causa del ciclo.
     
-    // 2. Dependencia: El repositorio de usuarios
+    // 2. Dependencia: El repositorio de usuarios (Esta está bien)
     private final UsuarioRepository usuarioRepository;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    // ¡CORRECCIÓN AQUÍ! Añade JwtAuthFilter jwtAuthFilter como PARÁMETRO
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
         http
-            .csrf(csrf -> csrf.disable()) // Deshabilitamos CSRF para APIs stateless
+            .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                // Damos permiso público a tus endpoints de auth y productos
-                .requestMatchers("/api/auth/**", "/api/productos/**").permitAll() 
+                // Damos permiso público a tus endpoints
+                .requestMatchers("/api/auth/**", "/api/productos/**", "/api/blogs/**").permitAll() 
                 .anyRequest().authenticated() // El resto de peticiones requieren autenticación
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Usamos sesiones stateless (JWT)
             .authenticationProvider(authenticationProvider())
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class); // Añadimos nuestro filtro JWT
+            // ¡Usa el filtro que recibiste como parámetro!
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class); 
 
         return http.build();
     }

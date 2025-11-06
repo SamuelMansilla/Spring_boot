@@ -3,6 +3,10 @@ import com.example.levelup.model.Usuario;
 
 public class DTO {
 
-public record AuthResponse(String token, Usuario usuario) {}
+    // DTO para enviar la respuesta de autenticación
+    public record AuthResponse(String token, Usuario usuario) {}
+
+    // DTO para recibir las credenciales de login
+    public record LoginRequest(String email, String password) {}
 
 }

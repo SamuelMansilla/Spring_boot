@@ -1,10 +1,18 @@
 package com.example.levelup.controller;
 
-import com.example.levelup.model.Usuario; // Importa el modelo Usuario
-import com.example.levelup.service.UsuarioService; // Importa el servicio UsuarioService
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.levelup.model.Usuario; 
+import com.example.levelup.service.UsuarioService; 
+import com.example.levelup.service.JwtService; // <-- AÑADIDO
+import com.example.levelup.controller.DTO.AuthResponse; // <-- AÑADIDO
+import com.example.levelup.controller.DTO.LoginRequest; // <-- AÑADIDO
+
+import lombok.RequiredArgsConstructor; // <-- AÑADIDO
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager; // <-- AÑADIDO
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken; // <-- AÑADIDO
+import org.springframework.security.core.Authentication; // <-- AÑADIDO
+import org.springframework.security.core.userdetails.UserDetails; // <-- AÑADIDO
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -13,45 +21,28 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "http://localhost:3000")
+@RequiredArgsConstructor // <-- AÑADIDO (para inyectar los nuevos servicios)
 public class AuthController {
 
-    @Autowired
-    private UsuarioService usuarioService;
-
+    // --- Inyectados por @RequiredArgsConstructor ---
+    private final UsuarioService usuarioService;
+    private final JwtService jwtService; // <-- AÑADIDO
+    private final AuthenticationManager authenticationManager; // <-- AÑADIDO
+    
     /**
      * Endpoint para registrar un nuevo usuario.
      */
     @PostMapping("/register")
     public ResponseEntity<?> registrarUsuario(@RequestBody Usuario nuevoUsuario) {
-        // Validación básica
         if (nuevoUsuario == null || nuevoUsuario.getEmail() == null || nuevoUsuario.getPassword() == null
                 || nuevoUsuario.getNombre() == null || nuevoUsuario.getApellidos() == null) {
             return ResponseEntity.badRequest().body(Map.of("mensaje", "Faltan datos obligatorios para el registro."));
         }
         
-        // --- Lógica de Referido (Añadir más adelante si se desea) ---
-        // String codigoReferidoIngresado = nuevoUsuario.getReferralCode(); 
-
         Optional<Usuario> usuarioCreadoOpt = usuarioService.registrarUsuario(nuevoUsuario);
 
         if (usuarioCreadoOpt.isPresent()) {
             Usuario usuarioCreado = usuarioCreadoOpt.get();
-
-            // --- Otorgar puntos al referente (si aplica) ---
-            /*
-            if (codigoReferidoIngresado != null && !codigoReferidoIngresado.trim().isEmpty()) {
-                 Optional<Usuario> referenteOpt = usuarioService.buscarPorCodigoReferido(codigoReferidoIngresado);
-                 if (referenteOpt.isPresent()) {
-                     Usuario referente = referenteOpt.get();
-                     if (!referente.getEmail().equalsIgnoreCase(usuarioCreado.getEmail())) {
-                        usuarioService.otorgarPuntos(referente.getEmail(), 100);
-                        System.out.println("Puntos otorgados a: " + referente.getNombre());
-                     }
-                 } else {
-                    System.out.println("Código de referido ingresado (" + codigoReferidoIngresado + ") no encontrado.");
-                 }
-            }
-            */
 
             // ¡CORRECCIÓN! Creamos una copia segura para la respuesta
             Usuario usuarioRespuesta = crearUsuarioRespuesta(usuarioCreado);
@@ -66,41 +57,47 @@ public class AuthController {
 
     /**
      * Endpoint para iniciar sesión.
+     * ¡REESCRITO PARA USAR JWT!
      */
     @PostMapping("/login")
-    public ResponseEntity<?> iniciarSesion(@RequestBody Map<String, String> credenciales) {
-        String email = credenciales.get("email");
-        String password = credenciales.get("password");
-
-        if (email == null || password == null) {
+    public ResponseEntity<?> iniciarSesion(@RequestBody LoginRequest loginRequest) {
+        
+        if (loginRequest.email() == null || loginRequest.password() == null) {
             return ResponseEntity.badRequest().body(Map.of("mensaje", "Email y contraseña son requeridos."));
         }
 
-        // 1. Validar las credenciales
-        Optional<Usuario> usuarioOpt = usuarioService.validarLogin(email, password);
+        try {
+            // 1. Autenticar al usuario
+            Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                    loginRequest.email().toLowerCase(),
+                    loginRequest.password()
+                )
+            );
 
-        if (usuarioOpt.isPresent()) {
-            Usuario usuarioEncontrado = usuarioOpt.get();
+            // 2. Si la autenticación es exitosa, Spring nos da el objeto Usuario
+            // (porque nuestro UserDetailsService lo devuelve)
+            Usuario usuario = (Usuario) authentication.getPrincipal();
 
-            // ¡CORRECCIÓN! Creamos una copia segura para la respuesta
-            Usuario usuarioRespuesta = crearUsuarioRespuesta(usuarioEncontrado);
+            // 3. Generar el token JWT
+            String token = jwtService.generateToken(usuario);
 
-            // 2. Devolvemos la COPIA segura (sin contraseña)
-            return ResponseEntity.ok(usuarioRespuesta);
-        } else {
-            // 3. Credenciales incorrectas
+            // 4. Devolver el token y los datos del usuario (sin contraseña)
+            AuthResponse respuesta = new AuthResponse(token, crearUsuarioRespuesta(usuario));
+            
+            return ResponseEntity.ok(respuesta);
+
+        } catch (Exception e) {
+            // Si la autenticación falla (ej. contraseña incorrecta)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("mensaje", "Correo o contraseña incorrectos."));
         }
     }
 
     /**
-     * Método auxiliar para crear un objeto Usuario seguro para enviar como respuesta JSON.
-     * Copia todos los campos excepto la contraseña.
-     * @param usuarioOriginal El objeto Usuario completo desde el servicio.
-     * @return Un nuevo objeto Usuario con la contraseña establecida en null.
+     * Método auxiliar para crear un objeto Usuario seguro (sin contraseña).
+     * (Sin cambios)
      */
     private Usuario crearUsuarioRespuesta(Usuario usuarioOriginal) {
-        // Asume que Usuario tiene un constructor vacío (o @NoArgsConstructor de Lombok)
         Usuario usuarioRespuesta = new Usuario(); 
         
         usuarioRespuesta.setRun(usuarioOriginal.getRun());

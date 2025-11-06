@@ -17,7 +17,7 @@ public class LevelupApplication {
 
     public static void main(String[] args) {
 
-        // --- 3. AÑADIR ESTAS LÍNEAS ANTES DE SPRINGAPPLICATION.RUN ---
+        // --- 3. CÓDIGO RESTAURADO PARA EL "RUN" DEL IDE ---
         try {
             // Encuentra la carpeta 'wallet' que está en 'resources'
             URL walletResource = LevelupApplication.class.getClassLoader().getResource("wallet/tnsnames.ora");
@@ -38,7 +38,7 @@ public class LevelupApplication {
             // Detiene la aplicación si no se puede configurar la wallet
             System.exit(1); 
         }
-        // --- FIN DEL CÓDIGO AÑADIDO ---
+        // --- FIN DEL CÓDIGO RESTAURADO ---
 
         // Inicia Spring DESPUÉS de configurar la propiedad
         SpringApplication.run(LevelupApplication.class, args);
