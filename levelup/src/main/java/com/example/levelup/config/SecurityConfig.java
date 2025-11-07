@@ -20,28 +20,27 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
+@RequiredArgsConstructor 
 public class SecurityConfig {
 
-    // 1. Dependencia: El filtro JWT
-    // private final JwtAuthFilter jwtAuthFilter; // <-- ¡ELIMINA ESTA LÍNEA! Esta es la causa del ciclo.
-    
-    // 2. Dependencia: El repositorio de usuarios (Esta está bien)
     private final UsuarioRepository usuarioRepository;
 
     @Bean
-    // ¡CORRECCIÓN AQUÍ! Añade JwtAuthFilter jwtAuthFilter como PARÁMETRO
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                // Damos permiso público a tus endpoints
+                // 1. Rutas públicas (no requieren token)
                 .requestMatchers("/api/auth/**", "/api/productos/**", "/api/blogs/**").permitAll() 
-                .anyRequest().authenticated() // El resto de peticiones requieren autenticación
+                
+                // 2. Rutas de Admin (requieren token Y rol 'ADMIN')
+                .requestMatchers("/api/usuarios/**").hasRole("ADMIN") // <-- ESTA LÍNEA ES LA MAGIA
+                
+                // 3. El resto de rutas (ej. /api/usuarios/me) requieren token
+                .anyRequest().authenticated() 
             )
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Usamos sesiones stateless (JWT)
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authenticationProvider())
-            // ¡Usa el filtro que recibiste como parámetro!
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class); 
 
         return http.build();
@@ -62,13 +61,11 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        // Usa BCrypt para encriptar contraseñas
         return new BCryptPasswordEncoder();
     }
 
     @Bean
     public UserDetailsService userDetailsService() {
-        // Le dice a Spring Security cómo buscar un usuario por su email
         return username -> usuarioRepository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
     }

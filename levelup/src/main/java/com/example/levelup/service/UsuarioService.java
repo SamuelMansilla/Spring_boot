@@ -101,4 +101,46 @@ public class UsuarioService {
     public List<Usuario> getAllUsuarios() {
         return usuarioRepository.findAll();
     }
+
+    public Optional<Usuario> actualizarUsuario(String email, Usuario usuarioActualizado) {
+        // 1. Busca el usuario existente
+        Optional<Usuario> usuarioOpt = usuarioRepository.findById(email.toLowerCase());
+        
+        if (usuarioOpt.isPresent()) {
+            Usuario existente = usuarioOpt.get();
+            
+            // 2. Actualiza todos los campos
+            existente.setNombre(usuarioActualizado.getNombre());
+            existente.setApellidos(usuarioActualizado.getApellidos());
+            existente.setRun(usuarioActualizado.getRun());
+            existente.setFechaNac(usuarioActualizado.getFechaNac());
+            existente.setRegion(usuarioActualizado.getRegion());
+            existente.setComuna(usuarioActualizado.getComuna());
+            existente.setRole(usuarioActualizado.getRole());
+            
+            // 3. Actualiza la contraseña SÓLO si se proporcionó una nueva
+            if (usuarioActualizado.getPassword() != null && !usuarioActualizado.getPassword().isEmpty()) {
+                existente.setPassword(passwordEncoder.encode(usuarioActualizado.getPassword()));
+            }
+            
+            // 4. Guarda los cambios en la BD
+            Usuario guardado = usuarioRepository.save(existente);
+            return Optional.of(guardado);
+        } else {
+            return Optional.empty(); // No encontrado
+        }
+    }
+
+    /**
+     * ELIMINA un usuario de la BD.
+     */
+    public boolean eliminarUsuario(String email) {
+        if (usuarioRepository.existsById(email.toLowerCase())) {
+            usuarioRepository.deleteById(email.toLowerCase());
+            return true;
+        } else {
+            return false;
+        }
+    }
+
 }

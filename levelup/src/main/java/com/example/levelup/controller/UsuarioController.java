@@ -62,16 +62,37 @@ public class UsuarioController {
      */
     @GetMapping("/me")
     public ResponseEntity<Usuario> obtenerMiPerfil() {
-        // --- Lógica a implementar con Spring Security ---
-        // 1. Obtener el email o username del usuario autenticado (ej., a través de AuthenticationPrincipal)
-        // 2. Buscar el usuario en el servicio: usuarioService.buscarPorEmail(emailAutenticado)
-        // 3. Si se encuentra, quitar contraseña y devolver ResponseEntity.ok(usuario)
-        // 4. Si no (raro si está autenticado), devolver ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR) o similar.
-
+   
         // Placeholder por ahora:
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(null); // 501 Not Implemented
     }
 
-    // Aquí podrías añadir endpoints para actualizar perfil (PUT /api/usuarios/me), etc.
-    // Recuerda protegerlos adecuadamente con seguridad.
+   
+    @PutMapping("/{email}")
+    public ResponseEntity<Usuario> actualizarUsuario(@PathVariable String email, @RequestBody Usuario usuarioActualizado) {
+         if (usuarioActualizado == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        Optional<Usuario> actualizado = usuarioService.actualizarUsuario(email, usuarioActualizado);
+        
+        return actualizado
+                .map(usuario -> {
+                    usuario.setPassword(null); // Quita la contraseña en la respuesta
+                    return ResponseEntity.ok(usuario);
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+
+    @DeleteMapping("/{email}")
+    public ResponseEntity<Void> eliminarUsuario(@PathVariable String email) {
+        boolean eliminado = usuarioService.eliminarUsuario(email);
+        if (eliminado) {
+            return ResponseEntity.noContent().build(); // Devuelve 204 No Content si se eliminó
+        } else {
+            return ResponseEntity.notFound().build(); // Devuelve 404 si no se encontró
+        }
+    }
+
 }
