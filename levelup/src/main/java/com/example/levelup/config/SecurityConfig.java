@@ -18,6 +18,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import java.util.Arrays;
+
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor 
@@ -29,14 +34,12 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
+            .cors(cors -> cors.configurationSource(corsConfigurationSource())) 
             .authorizeHttpRequests(auth -> auth
-                // 1. Rutas públicas (no requieren token)
                 .requestMatchers("/api/auth/**", "/api/productos/**", "/api/blogs/**").permitAll() 
                 
-                // 2. Rutas de Admin (requieren token Y rol 'ADMIN')
-                .requestMatchers("/api/usuarios/**").hasRole("ADMIN") // <-- ESTA LÍNEA ES LA MAGIA
+                .requestMatchers("/api/usuarios/**").hasAuthority("ADMIN") 
                 
-                // 3. El resto de rutas (ej. /api/usuarios/me) requieren token
                 .anyRequest().authenticated() 
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -68,5 +71,19 @@ public class SecurityConfig {
     public UserDetailsService userDetailsService() {
         return username -> usuarioRepository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
+    }
+
+    // --- 3. BEAN AÑADIDO PARA LA CONFIGURACIÓN GLOBAL DE CORS ---
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000")); 
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
+        configuration.setAllowCredentials(true);
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration); 
+        return source;
     }
 }
