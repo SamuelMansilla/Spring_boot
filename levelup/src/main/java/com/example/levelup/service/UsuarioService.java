@@ -52,12 +52,6 @@ public class UsuarioService {
     }
 
     /**
-     * ¡ELIMINADO!
-     * El método validarLogin(String email, String password) se elimina.
-     * Spring Security (AuthenticationManager) se encargará de esto.
-     */
-
-    /**
      * Busca un usuario por su código de referido en la BD.
      */
     public Optional<Usuario> buscarPorCodigoReferido(String codigo) {
@@ -77,6 +71,7 @@ public class UsuarioService {
             Usuario usuario = usuarioOpt.get();
             usuario.setPoints(usuario.getPoints() + puntos);
             // Aquí podrías añadir lógica para subir de nivel
+            // ej: if (usuario.getPoints() > (usuario.getLevel() * 1000)) { usuario.setLevel(usuario.getLevel() + 1); }
             
             // Guarda el cambio en la BD
             usuarioRepository.save(usuario);
@@ -118,6 +113,12 @@ public class UsuarioService {
             existente.setComuna(usuarioActualizado.getComuna());
             existente.setRole(usuarioActualizado.getRole());
             
+            // --- ¡CAMBIOS AÑADIDOS! ---
+            // Ahora el admin puede editar los puntos y el nivel
+            existente.setPoints(usuarioActualizado.getPoints());
+            existente.setLevel(usuarioActualizado.getLevel());
+            // --------------------------
+            
             // 3. Actualiza la contraseña SÓLO si se proporcionó una nueva
             if (usuarioActualizado.getPassword() != null && !usuarioActualizado.getPassword().isEmpty()) {
                 existente.setPassword(passwordEncoder.encode(usuarioActualizado.getPassword()));
@@ -142,5 +143,4 @@ public class UsuarioService {
             return false;
         }
     }
-
 }

@@ -4,6 +4,9 @@ import com.example.levelup.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+// --- ¡CAMBIO AÑADIDO! ---
+import org.springframework.http.HttpMethod;
+// -------------------------
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -18,10 +21,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+// --- Imports de CORS (de nuestro arreglo anterior) ---
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
+// ----------------------------------------
 
 @Configuration
 @EnableWebSecurity
@@ -34,12 +39,22 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.configurationSource(corsConfigurationSource())) 
+            .cors(cors -> cors.configurationSource(corsConfigurationSource())) // <-- Configuración de CORS
             .authorizeHttpRequests(auth -> auth
+                // 1. Rutas públicas (no requieren token)
                 .requestMatchers("/api/auth/**", "/api/productos/**", "/api/blogs/**").permitAll() 
                 
-                .requestMatchers("/api/usuarios/**").hasAuthority("ADMIN") 
+                // --- ¡NUEVA REGLA AÑADIDA! ---
+                // 2. Rutas de Usuario (requieren token, CUALQUIER rol)
+                //    Permite al usuario obtener su perfil y sumar puntos
+                .requestMatchers(HttpMethod.GET, "/api/usuarios/me").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/usuarios/me/sumar-puntos").authenticated()
+                // ----------------------------
                 
+                // 3. Rutas de Admin (requieren token Y rol 'ADMIN')
+                .requestMatchers("/api/usuarios/**").hasAuthority("ADMIN") // <-- Regla de Admin (debe ir DESPUÉS de las más específicas)
+                
+                // 4. El resto de rutas requieren token
                 .anyRequest().authenticated() 
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -73,7 +88,7 @@ public class SecurityConfig {
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
     }
 
-    // --- 3. BEAN AÑADIDO PARA LA CONFIGURACIÓN GLOBAL DE CORS ---
+    // --- Bean de CORS (de nuestro arreglo anterior) ---
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
