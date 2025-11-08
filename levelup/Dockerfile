@@ -1,5 +1,5 @@
 # 1. Imagen base con Java 21 (coincide con tu pom.xml)
-FROM openjdk:21-jdk-slim
+FROM eclipse-temurin:21-jdk-slim
 
 # 2. Establecer un directorio de trabajo dentro del contenedor
 WORKDIR /app
