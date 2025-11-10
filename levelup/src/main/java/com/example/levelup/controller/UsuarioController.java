@@ -86,7 +86,6 @@ public class UsuarioController {
     }
 
     // --- ¡ENDPOINT ACTUALIZADO! ---
-    // Ahora llama a 'otorgarPuntos' y luego busca al usuario para devolverlo actualizado
     @PostMapping("/me/sumar-puntos")
     public ResponseEntity<Usuario> sumarPuntosAUsuario(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -96,23 +95,26 @@ public class UsuarioController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         
-        if (puntosASumar == null || puntosASumar <= 0) {
+        // Mantenemos la validación que permite negativos (para canjear)
+        if (puntosASumar == null || puntosASumar == 0) {
             return ResponseEntity.badRequest().body(null);
         }
 
         String email = userDetails.getUsername();
         
-        // 1. Otorga los puntos (método void)
-        usuarioService.otorgarPuntos(email, puntosASumar);
+        // --- CAMBIO CLAVE ---
+        // 1. Llamamos al servicio (que ahora devuelve el usuario)
+        Optional<Usuario> actualizado = usuarioService.otorgarPuntos(email, puntosASumar);
 
-        // 2. Busca al usuario actualizado para devolverlo al frontend
-        Optional<Usuario> actualizado = usuarioService.buscarPorEmail(email);
+        // 2. Eliminamos la segunda búsqueda (ya no es necesaria)
+        // Optional<Usuario> actualizado = usuarioService.buscarPorEmail(email); // <-- BORRADO
 
         return actualizado
                 .map(usuario -> {
                     usuario.setPassword(null); // Quita la contraseña
                     return ResponseEntity.ok(usuario);
                 })
+                // Si el servicio devolvió 'empty' (porque no encontró el email), devolvemos 404
                 .orElseGet(() -> ResponseEntity.notFound().build()); 
     }
 }

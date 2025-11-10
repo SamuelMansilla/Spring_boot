@@ -63,8 +63,9 @@ public class UsuarioService {
 
     /**
      * Otorga puntos a un usuario y guarda en la BD.
+     * --- ¡CAMBIO! Ahora devuelve el Usuario actualizado ---
      */
-    public void otorgarPuntos(String email, int puntos) {
+    public Optional<Usuario> otorgarPuntos(String email, int puntos) {
         Optional<Usuario> usuarioOpt = usuarioRepository.findById(email.toLowerCase());
         
         if (usuarioOpt.isPresent()) {
@@ -74,8 +75,14 @@ public class UsuarioService {
             // ej: if (usuario.getPoints() > (usuario.getLevel() * 1000)) { usuario.setLevel(usuario.getLevel() + 1); }
             
             // Guarda el cambio en la BD
-            usuarioRepository.save(usuario);
+            Usuario usuarioGuardado = usuarioRepository.save(usuario);
             System.out.println(usuario.getNombre() + " ahora tiene " + usuario.getPoints() + " puntos."); // Log
+            
+            // Devuelve el usuario guardado
+            return Optional.of(usuarioGuardado);
+        } else {
+             // Si no se encontró el usuario, devuelve vacío
+            return Optional.empty();
         }
     }
 
