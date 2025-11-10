@@ -114,7 +114,7 @@ public class UsuarioController {
                     usuario.setPassword(null); // Quita la contraseña
                     return ResponseEntity.ok(usuario);
                 })
-                // Si el servicio devolvió 'empty' (porque no encontró el email), devolvemos 404
+                // Si el servicio devolvió 'empty' (porque no encontró el email) devolvemos 404
                 .orElseGet(() -> ResponseEntity.notFound().build()); 
     }
 }

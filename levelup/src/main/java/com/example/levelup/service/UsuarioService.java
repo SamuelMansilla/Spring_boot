@@ -140,7 +140,7 @@ public class UsuarioService {
     }
 
     /**
-     * ELIMINA un usuario de la BD.
+     * ELIMINA un usuario de la BD
      */
     public boolean eliminarUsuario(String email) {
         if (usuarioRepository.existsById(email.toLowerCase())) {
