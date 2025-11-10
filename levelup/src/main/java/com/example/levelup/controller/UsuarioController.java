@@ -15,9 +15,9 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/usuarios")
-// NOTA: ¡Recuerda añadir tu URL de frontend de Render aquí para el CORS!
+// NOTA: Asegúrate de que aquí también esté tu URL de Render (además de localhost)
 // ej: @CrossOrigin(origins = {"http://localhost:3000", "https://eva-2-react.onrender.com"})
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "http://localhost:3000") 
 public class UsuarioController {
 
     @Autowired
@@ -65,7 +65,6 @@ public class UsuarioController {
             return ResponseEntity.badRequest().build();
         }
         
-        // El servicio 'actualizarUsuario' ya fue modificado para incluir puntos y nivel
         Optional<Usuario> actualizado = usuarioService.actualizarUsuario(email, usuarioActualizado);
         
         return actualizado
@@ -87,8 +86,7 @@ public class UsuarioController {
         }
     }
 
-    // --- ¡ENDPOINT ACTUALIZADO Y CORREGIDO! ---
-    // Ahora llama a 'otorgarPuntos' y luego busca al usuario para devolverlo actualizado
+    // --- ¡ENDPOINT CORREGIDO! ---
     @PostMapping("/me/sumar-puntos")
     public ResponseEntity<Usuario> sumarPuntosAUsuario(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -97,14 +95,17 @@ public class UsuarioController {
         if (userDetails == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-    
+        
+        // --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
+        // Cambiamos de "<= 0" a "== 0" para permitir números negativos (canjear)
         if (puntosASumar == null || puntosASumar == 0) {
             return ResponseEntity.badRequest().body(null); // Rechaza si es nulo o exactamente 0
         }
+        // ---------------------------------
 
         String email = userDetails.getUsername();
         
-        // 1. Otorga los puntos (método void)
+        // 1. Otorga los puntos (positivos o negativos)
         usuarioService.otorgarPuntos(email, puntosASumar);
 
         // 2. Busca al usuario actualizado para devolverlo al frontend
