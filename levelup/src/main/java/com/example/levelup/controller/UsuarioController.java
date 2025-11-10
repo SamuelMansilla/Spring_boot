@@ -15,6 +15,8 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/usuarios")
+// NOTA: ¡Recuerda añadir tu URL de frontend de Render aquí para el CORS!
+// ej: @CrossOrigin(origins = {"http://localhost:3000", "https://eva-2-react.onrender.com"})
 @CrossOrigin(origins = "http://localhost:3000")
 public class UsuarioController {
 
@@ -24,7 +26,7 @@ public class UsuarioController {
     @GetMapping
     public List<Usuario> obtenerTodosLosUsuarios() {
         return usuarioService.getAllUsuarios().stream()
-                .peek(usuario -> usuario.setPassword(null))
+                .peek(usuario -> usuario.setPassword(null)) // Quita la contraseña de la respuesta
                 .collect(Collectors.toList());
     }
 
@@ -34,7 +36,7 @@ public class UsuarioController {
 
         return usuarioOpt
                 .map(usuario -> {
-                    usuario.setPassword(null);
+                    usuario.setPassword(null); // Quita la contraseña
                     return ResponseEntity.ok(usuario);
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -50,7 +52,7 @@ public class UsuarioController {
         
         return usuarioOpt
                 .map(usuario -> {
-                    usuario.setPassword(null);
+                    usuario.setPassword(null); // Quita la contraseña
                     return ResponseEntity.ok(usuario);
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -85,7 +87,8 @@ public class UsuarioController {
         }
     }
 
-    // --- ¡ENDPOINT ACTUALIZADO! ---
+    // --- ¡ENDPOINT ACTUALIZADO Y CORREGIDO! ---
+    // Ahora llama a 'otorgarPuntos' y luego busca al usuario para devolverlo actualizado
     @PostMapping("/me/sumar-puntos")
     public ResponseEntity<Usuario> sumarPuntosAUsuario(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -94,27 +97,24 @@ public class UsuarioController {
         if (userDetails == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        
-        // Mantenemos la validación que permite negativos (para canjear)
+    
         if (puntosASumar == null || puntosASumar == 0) {
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity.badRequest().body(null); // Rechaza si es nulo o exactamente 0
         }
 
         String email = userDetails.getUsername();
         
-        // --- CAMBIO CLAVE ---
-        // 1. Llamamos al servicio (que ahora devuelve el usuario)
-        Optional<Usuario> actualizado = usuarioService.otorgarPuntos(email, puntosASumar);
+        // 1. Otorga los puntos (método void)
+        usuarioService.otorgarPuntos(email, puntosASumar);
 
-        // 2. Eliminamos la segunda búsqueda (ya no es necesaria)
-        // Optional<Usuario> actualizado = usuarioService.buscarPorEmail(email); // <-- BORRADO
+        // 2. Busca al usuario actualizado para devolverlo al frontend
+        Optional<Usuario> actualizado = usuarioService.buscarPorEmail(email);
 
         return actualizado
                 .map(usuario -> {
                     usuario.setPassword(null); // Quita la contraseña
                     return ResponseEntity.ok(usuario);
                 })
-                // Si el servicio devolvió 'empty' (porque no encontró el email) devolvemos 404
                 .orElseGet(() -> ResponseEntity.notFound().build()); 
     }
 }
