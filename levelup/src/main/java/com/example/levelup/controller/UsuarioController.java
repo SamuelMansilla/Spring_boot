@@ -18,7 +18,10 @@ import java.util.stream.Collectors;
 // ¡OJO! Tu SecurityConfig ya maneja el CORS, pero si lo dejas aquí,
 // asegúrate de que también incluya la URL de Render.
 // @CrossOrigin(origins = {"http://localhost:3000", "https://eva-2-react.onrender.com"})
-@CrossOrigin(origins = "http://localhost:3000") 
+
+// --- ¡ESTA ES LA CORRECCIÓN! ---
+// Se comenta la línea de abajo para dejar que SecurityConfig maneje el CORS
+// @CrossOrigin(origins = "http://localhost:3000") 
 public class UsuarioController {
 
     @Autowired
@@ -97,12 +100,9 @@ public class UsuarioController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         
-        // --- ¡ESTA ES LA CORRECCIÓN! ---
-        // Cambiamos de "<= 0" a "== 0" para permitir números negativos (canjear)
         if (puntosASumar == null || puntosASumar == 0) {
             return ResponseEntity.badRequest().body(null); // Rechaza si es nulo o exactamente 0
         }
-        // ---------------------------------
 
         String email = userDetails.getUsername();
         
