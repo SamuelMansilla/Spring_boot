@@ -4,7 +4,7 @@ import com.example.levelup.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpMethod; // <-- Asegúrate de que este import esté
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -19,12 +19,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-// --- Imports de CORS ---
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
-// ----------------------------------------
 
 @Configuration
 @EnableWebSecurity
@@ -37,19 +35,23 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.configurationSource(corsConfigurationSource())) // <-- Habilita CORS
+            .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Habilita CORS
             .authorizeHttpRequests(auth -> auth
-                // 1. Rutas públicas (no requieren token)
+                
+                // --- 1. REGLAS PÚBLICAS (No requieren token) ---
                 .requestMatchers("/api/auth/**", "/api/productos/**", "/api/blogs/**").permitAll() 
                 
-                // 2. Rutas de Usuario (requieren token, CUALQUIER rol)
+                // --- 2. REGLAS ESPECÍFICAS DE USUARIO (¡DEBEN IR ANTES QUE LA DE ADMIN!) ---
+                // Cualquier usuario logueado puede ver su perfil y sumar/restar puntos
                 .requestMatchers(HttpMethod.GET, "/api/usuarios/me").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/usuarios/me/sumar-puntos").authenticated()
                 
-                // 3. Rutas de Admin (requieren token Y rol 'ADMIN')
-                .requestMatchers("/api/usuarios/**").hasAuthority("ADMIN")
+                // --- 3. REGLA GENERAL DE ADMIN ---
+                // Solo los ADMINS pueden ver la lista de usuarios, editar otros usuarios, etc.
+                .requestMatchers("/api/usuarios/**").hasAuthority("ADMIN") 
                 
-                // 4. El resto de rutas requieren token
+                // --- 4. REGLA FINAL ---
+                // Cualquier otra petición que no coincida, requiere estar logueado
                 .anyRequest().authenticated() 
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -83,15 +85,14 @@ public class SecurityConfig {
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
     }
 
-    // --- Bean de CORS (CORREGIDO) ---
+    // --- Bean de CORS (Asegúrate de tener ambas URLs) ---
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // Se añade la nueva URL del frontend
         configuration.setAllowedOrigins(Arrays.asList(
             "http://localhost:3000",
-            "https://eva-2-react.onrender.com" 
+            "https://eva-2-react.onrender.com" // <-- La URL de tu frontend
         ));
         
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
@@ -102,6 +103,4 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", configuration); 
         return source;
     }
-
-    
 }
