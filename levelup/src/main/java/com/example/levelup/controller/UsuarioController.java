@@ -15,8 +15,9 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/usuarios")
-// NOTA: Asegúrate de que aquí también esté tu URL de Render (además de localhost)
-// ej: @CrossOrigin(origins = {"http://localhost:3000", "https://eva-2-react.onrender.com"})
+// ¡OJO! Tu SecurityConfig ya maneja el CORS, pero si lo dejas aquí,
+// asegúrate de que también incluya la URL de Render.
+// @CrossOrigin(origins = {"http://localhost:3000", "https://eva-2-react.onrender.com"})
 @CrossOrigin(origins = "http://localhost:3000") 
 public class UsuarioController {
 
@@ -26,7 +27,7 @@ public class UsuarioController {
     @GetMapping
     public List<Usuario> obtenerTodosLosUsuarios() {
         return usuarioService.getAllUsuarios().stream()
-                .peek(usuario -> usuario.setPassword(null)) // Quita la contraseña de la respuesta
+                .peek(usuario -> usuario.setPassword(null)) 
                 .collect(Collectors.toList());
     }
 
@@ -36,7 +37,7 @@ public class UsuarioController {
 
         return usuarioOpt
                 .map(usuario -> {
-                    usuario.setPassword(null); // Quita la contraseña
+                    usuario.setPassword(null); 
                     return ResponseEntity.ok(usuario);
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -52,7 +53,7 @@ public class UsuarioController {
         
         return usuarioOpt
                 .map(usuario -> {
-                    usuario.setPassword(null); // Quita la contraseña
+                    usuario.setPassword(null); 
                     return ResponseEntity.ok(usuario);
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -86,7 +87,7 @@ public class UsuarioController {
         }
     }
 
-    // --- ¡ENDPOINT CORREGIDO! ---
+    
     @PostMapping("/me/sumar-puntos")
     public ResponseEntity<Usuario> sumarPuntosAUsuario(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -96,7 +97,7 @@ public class UsuarioController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         
-        // --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
+        // --- ¡ESTA ES LA CORRECCIÓN! ---
         // Cambiamos de "<= 0" a "== 0" para permitir números negativos (canjear)
         if (puntosASumar == null || puntosASumar == 0) {
             return ResponseEntity.badRequest().body(null); // Rechaza si es nulo o exactamente 0

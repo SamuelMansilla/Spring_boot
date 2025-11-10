@@ -4,7 +4,7 @@ import com.example.levelup.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod; // <-- Asegúrate de que este import esté
+import org.springframework.http.HttpMethod; // <-- Importante
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -41,13 +41,13 @@ public class SecurityConfig {
                 // --- 1. REGLAS PÚBLICAS (No requieren token) ---
                 .requestMatchers("/api/auth/**", "/api/productos/**", "/api/blogs/**").permitAll() 
                 
-                // --- 2. REGLAS ESPECÍFICAS DE USUARIO (¡DEBEN IR ANTES QUE LA DE ADMIN!) ---
-                // Cualquier usuario logueado puede ver su perfil y sumar/restar puntos
+                // --- 2. REGLAS ESPECÍFICAS DE USUARIO (¡ESTE ES EL ARREGLO!) ---
+                // Deben ir ANTES que la regla general de admin.
                 .requestMatchers(HttpMethod.GET, "/api/usuarios/me").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/usuarios/me/sumar-puntos").authenticated()
                 
                 // --- 3. REGLA GENERAL DE ADMIN ---
-                // Solo los ADMINS pueden ver la lista de usuarios, editar otros usuarios, etc.
+                // Ahora esta regla se aplica al resto de /api/usuarios/**
                 .requestMatchers("/api/usuarios/**").hasAuthority("ADMIN") 
                 
                 // --- 4. REGLA FINAL ---
