@@ -1,23 +1,44 @@
-# 1. Imagen base con Java 21 (coincide con tu pom.xml)
-FROM openjdk:21-jdk-slim
+# --- ETAPA 1: Construcción (Build) ---
+# Usamos una imagen de Maven (basada en Java 21) para construir el proyecto
+FROM maven:3.9.7-eclipse-temurin-21 AS build
 
-# 2. Establecer un directorio de trabajo dentro del contenedor
+WORKDIR /build
+
+# Copiamos el pom.xml y descargamos las dependencias
+COPY pom.xml .
+RUN mvn dependency:go-offline
+
+# Copiamos todo el código fuente y lo compilamos
+COPY src ./src
+RUN mvn clean package -DskipTests
+
+# --- ETAPA 2: Ejecución (Run) ---
+# Usamos la imagen base limpia de Java 21
+FROM eclipse-temurin:21-jdk
+
+# --- ¡CAMBIO 1: Instalar 'unzip' ---
+# Necesitamos permisos de root para instalarlo
+USER root
+RUN apt-get update && apt-get install -y unzip && rm -rf /var/lib/apt/lists/*
+
+# Volvemos al directorio de trabajo
 WORKDIR /app
 
-# 3. Copiar la Billetera (Wallet) de Oracle
-# Copiamos la carpeta de la billetera que está en 'src/main/resources'
-# a una nueva carpeta 'config/wallet' dentro del contenedor
-COPY src/main/resources/wallet ./config/wallet
+# --- ¡CAMBIO 2: Copiar el ZIP y DESCOMPRIMIRLO en /wallet ---
+# Copiamos el zip (asumiendo que está en src/main/resources/wallet/Wallet_base1.zip)
+# La ruta de origen (COPY) mira tus archivos locales, no la Etapa 1
+COPY src/main/resources/wallet/Wallet_base1.zip /app/wallet.zip
 
-# 4. Copiar el archivo .jar generado por Maven
-# El nombre levelup-0.0.1-SNAPSHOT.jar es correcto según tu pom.xml
-COPY target/levelup-0.0.1-SNAPSHOT.jar app.jar
+# Creamos el directorio /wallet y descomprimimos los archivos allí
+RUN mkdir /wallet
+RUN unzip /app/wallet.zip -d /wallet
 
-# 5. Render usa la variable PORT, la exponemos
+# Copiamos el .jar de la etapa 1
+COPY --from=build /build/target/levelup-0.0.1-SNAPSHOT.jar app.jar
+
+# Exponemos el puerto
 ENV PORT=8080
 EXPOSE 8080
 
-# 6. Comando para ejecutar el JAR
-# IMPORTANTE: Usamos -Doracle.net.tns_admin para decirle a Java
-# dónde encontrar la billetera que copiamos en el paso 3.
-ENTRYPOINT ["java", "-Doracle.net.tns_admin=/app/config/wallet", "-jar", "/app/app.jar"]
+# --- ¡CAMBIO 3: Apuntar al directorio /wallet (donde están los archivos extraídos) ---
+ENTRYPOINT ["java", "-Doracle.net.tns_admin=/wallet", "-jar", "/app/app.jar"]

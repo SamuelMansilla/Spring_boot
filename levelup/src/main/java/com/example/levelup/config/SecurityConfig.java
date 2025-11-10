@@ -83,15 +83,15 @@ public class SecurityConfig {
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
     }
 
-    // --- ¡AQUÍ ESTÁ LA CORRECCIÓN IMPORTANTE! ---
+    // --- Bean de CORS (CORREGIDO) ---
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // Añadimos la URL de tu frontend a la lista de orígenes permitidos
+        // Se añade la nueva URL del frontend
         configuration.setAllowedOrigins(Arrays.asList(
             "http://localhost:3000",
-            "https://eva-2-react.onrender.com" // <-- ¡ESTA LÍNEA ES LA SOLUCIÓN!
+            "https://eva-2-react.onrender.com" 
         ));
         
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
